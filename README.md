@@ -2,6 +2,8 @@
 
 A simple terminal-based server monitoring tool built with Bubble Tea. Monitor multiple servers and track their online/offline status in real-time.
 
+![Dashboard](dashboard.png)
+
 ## Features
 
 - Monitor multiple servers via TCP ping
@@ -35,6 +37,8 @@ Run the application:
 - **`q`** or **`Ctrl+C`** - Quit the application
 
 ### Adding a Server
+
+![Add Server Form](addServer.png)
 
 1. Press `a` to open the add server form
 2. Enter the following information:
