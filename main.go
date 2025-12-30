@@ -7,6 +7,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/charmbracelet/bubbles/help"
+	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/huh"
@@ -40,6 +42,22 @@ type server struct {
 	pingSinceSeconds int64
 }
 
+var keys = keyMap{
+	Add: key.NewBinding(
+		key.WithKeys("a"),
+		key.WithHelp("a", "add server"),
+	),
+	Quit: key.NewBinding(
+		key.WithKeys("q", "esc", "ctrl+c"),
+		key.WithHelp("q", "quit"),
+	),
+}
+
+type keyMap struct {
+	Add  key.Binding
+	Quit key.Binding
+}
+
 type model struct {
 	addServerForm *huh.Form
 	serverList    table.Model
@@ -54,6 +72,8 @@ type model struct {
 	onlineStyle  lipgloss.Style
 	offlineStyle lipgloss.Style
 	tableStyle   lipgloss.Style
+	help         help.Model
+	keys         keyMap
 }
 
 type pingResultMsg struct {
@@ -62,6 +82,10 @@ type pingResultMsg struct {
 }
 
 type tickMsg struct{}
+
+func (k keyMap) ShortHelp() []key.Binding {
+	return []key.Binding{k.Add, k.Quit}
+}
 
 func initialModel() model {
 	columns := []table.Column{
@@ -90,6 +114,7 @@ func initialModel() model {
 		onlineStyle:  lipgloss.NewStyle().Foreground(lipgloss.Color("10")), // Green
 		offlineStyle: lipgloss.NewStyle().Foreground(lipgloss.Color("9")),  // Red
 		tableStyle:   lipgloss.NewStyle().BorderStyle(lipgloss.RoundedBorder()).BorderForeground(lipgloss.Color("13")),
+		help:         help.New(),
 	}
 
 	initialmodel.addServerForm = initialmodel.generateAddForm()
@@ -160,6 +185,15 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 	case modeAdding:
+		switch tickMsg := msg.(type) {
+		case tea.KeyMsg:
+			switch tickMsg.String() {
+			case "esc":
+				m.mode = modeViewing
+				return m, nil
+			}
+		}
+
 		form, cmd := m.addServerForm.Update(msg)
 		if f, ok := form.(*huh.Form); ok {
 			m.addServerForm = f
@@ -211,7 +245,7 @@ func (m *model) View() string {
 			})
 		}
 		m.serverList.SetRows(rows)
-		return appTitle + "\n\n" + m.tableStyle.Render(m.serverList.View()) + "\n\nPress 'a' to add a server, 'q' to quit."
+		return appTitle + "\n\n" + m.tableStyle.Render(m.serverList.View()) + "\n\n" + m.help.ShortHelpView(keys.ShortHelp())
 	case modeAdding:
 		return appTitle + "\n\n" + m.addServerForm.View() + "\n\nPress 'Enter' to submit, 'Esc' to cancel."
 	}
